@@ -1,0 +1,9 @@
+profile: doks-dev
+cluster-name: colors-doks-dev
+region: ams3
+kubernetes-version: 1.36.3-do.2
+worker-size: s-2vcpu-4gb
+worker-count: 1
+state-bucket: doks-state
+state-endpoint: https://YOUR_ACCOUNT.r2.cloudflarestorage.com
+compute-prevent-destroy: true

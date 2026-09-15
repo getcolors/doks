@@ -1,0 +1,5 @@
+{:paths ["src" "test"]
+ :deps {io.github.getcolors/doks {:local/root "."}}
+ :tasks {doks {:requires ([colors.doks :as doks]) :task (apply doks/-main *command-line-args*)}
+         test {:requires ([clojure.test :as t] [colors.doks-test])
+               :task (let [r (t/run-tests 'colors.doks-test)] (System/exit (+ (:fail r) (:error r))))}}}
