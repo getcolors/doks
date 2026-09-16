@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# doks is a single colour, so there is no parity harness. This is the
-# regression net in its place: render each fixture and diff against committed
-# output — DigitalOcean with a registry, Vultr without.
-#
-#   ./scripts/golden.sh            check
-#   ./scripts/golden.sh --accept   regenerate after an intended change — read
-#                                  the diff first
+# Render both Green fixtures and compare their committed documents.
+# scripts/parity.sh compares the native Red and Blue output with Green.
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 status=0

@@ -2,7 +2,7 @@
 
 ## What this is
 
-`doks` is a Green-only Package Skill for one managed Kubernetes cluster —
+`doks` is a Green, Red and Blue Package Skill for one managed Kubernetes cluster —
 DigitalOcean Kubernetes (DOKS) or Vultr Kubernetes Engine (VKE) — provisioned
 through the pinned `colors-compute` library's `managed-kubernetes` kind, plus
 an optional deployment-owned DigitalOcean container registry integrated with
@@ -11,15 +11,23 @@ API, the cluster standard and the SSH standards do not apply. The first
 consumer is `../doks-dev`; the cluster it materializes is what
 `redis-operator-doks` and similar deployments run on.
 
-The repository ships `package-doks-green` and its `green` launcher payload.
-The root `./green` is a symlink to that payload. The launcher holds no logic:
-validation, the graph and every step live under
-`io.github.getcolors.doks.*`, where `bb test` reaches them.
+The repository ships `package-doks-green`, `package-doks-red` and
+`package-doks-blue`. Green source remains under `src/clj`; Red source is in
+`red/src`; Blue source is in `blue/src/package_doks_blue`. Each implementation
+uses its native SDK workflow and the matching colors-compute library.
+The root `./green`, `./red/red` and `./blue/blue` link to the payloads.
+Copied deployment launchers contain only dependency bootstrap and CLI dispatch.
 
 ## Commands
 
 ```sh
 bb test                      # unit tests
+bun install --cwd red
+bun test --cwd red
+bun run --cwd red typecheck
+uv sync --project blue
+uv run --project blue pytest blue/tests
+./scripts/parity.sh           # byte-for-byte Green / Red / Blue fixture comparison
 bb golden                    # render both fixtures, diff against test/resources/golden
 bb golden:accept             # regenerate after an intended change — read the diff first
 ./scripts/launcher.sh        # the copied-out payload builds on its own
@@ -31,7 +39,7 @@ bb golden:accept             # regenerate after an intended change — read the 
 ./green registry             # short-lived docker push config under .colors/<profile>/registry/push/
 ./green delete               # guarded and destructive
 bb doks <verb> ...           # the same launcher through babashka
-bb pin                       # stamp the payload with the pushed HEAD — never by hand
+bb pin                       # stamp all payloads with the pushed HEAD — never by hand
 ```
 
 Never run a real `create` or `delete` without explicit authorization. Never
@@ -136,8 +144,9 @@ tracked files.
 ## Package and deployment coupling
 
 The deployment launcher is a copy, not a symlink. The package pin is managed
-only by `bb pin` after a clean pushed commit; never invent or hand-edit
-`doks-sha`. After repinning, update consumers by installing/updating the skill
+only by `bb pin` after a clean commit pushed to main. It reads native SDK and
+compute pins from the colour manifests and stamps all three launchers. Never
+invent or hand-edit a pin. After repinning, update consumers by installing/updating the skill
 and re-copying the payload:
 
 ```sh
@@ -158,3 +167,19 @@ and the no-rendered-secret boundary. Read every golden diff; never run
 ## Git
 
 Work on the current branch. Do not commit or push unless explicitly asked.
+
+## Port contracts
+
+All colours implement build, create, check, kubeconfig, registry and delete.
+They use the same legacy-state refusal, state keys, registry resource and
+credential permissions. Dry runs validate the profile and destruction guard,
+then skip every effect, including rendering. The package validates provider
+choices from the compute library recipes. Registry tokens travel in HTTP
+headers or the tofu environment and never appear in generated documents.
+
+Use `DOKS_LIB_ROOT` for copied-launcher development. Red resolves the checkout's
+`red/src/index.ts` after `bun install --cwd red`. To run an unpinned Blue copy,
+use `DOKS_LIB_ROOT=/path/to/doks uv run --project blue python /path/to/blue ...`.
+After pinning, the standalone Blue executable installs its immutable dependencies
+through uv. `DOKS_COLD_LAUNCHERS=1 ./scripts/launcher-ports.sh` checks published
+payloads without a working-tree override.

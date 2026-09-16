@@ -1,0 +1,63 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["package-doks-blue", "blue", "colors-compute-blue @ git+https://github.com/getcolors/colors-compute.git@7e1c2349388ff2ca8a3da65a0c8cb888315b57f4#subdirectory=blue"]
+#
+# [tool.uv.sources]
+# package-doks-blue = { git = "https://github.com/getcolors/doks.git", rev = "UNPINNED", subdirectory = "blue" }
+# blue = { git = "https://github.com/getcolors/blue.git", rev = "290f313ead5ca162875c33a049c880da017eae09" }
+# ///
+#
+# Managed by `bb pin` — do not edit by hand, and never invent a SHA.
+#
+# Stamped by `bb pin`. DOKS_LIB_ROOT=/path/to/doks still overrides the
+# pin with a working tree.
+"""Thin launcher for package-doks-blue.
+
+This file is both the skill payload and the repository entry point:
+blue/blue in the repository is a symlink to it. It deliberately holds no
+logic of its own: validation, the graph and the steps all live in the
+package-doks-blue library, where the test suite reaches them. A copied
+payload is the one place in this project where code cannot be tested, so
+nothing that can live elsewhere should live here. DOKS_LIB_ROOT names the
+repository root; the blue implementation lives under its blue/ directory.
+"""
+
+import os
+import subprocess
+import sys
+
+UNPINNED_ERROR = """\
+this launcher carries no doks pin.
+It has not been stamped by `bb pin`, which cannot run until the doks
+repository has been pushed.
+Point it at a checkout meanwhile: DOKS_LIB_ROOT=/path/to/doks
+(or run through the repository project: cd doks/blue && uv run python -m package_doks_blue ...)
+"""
+
+
+def _lib_root_project(root: str) -> str:
+    """The uv project inside a DOKS_LIB_ROOT checkout: the repository
+    root or its blue/ implementation both work."""
+    if os.path.isfile(os.path.join(root, "pyproject.toml")):
+        return root
+    return os.path.join(root, "blue")
+
+
+def main() -> None:
+    root = os.environ.get("DOKS_LIB_ROOT")
+    if root:
+        result = subprocess.run(
+            ["uv", "run", "--project", _lib_root_project(root),
+             "python", "-m", "package_doks_blue", *sys.argv[1:]])
+        raise SystemExit(result.returncode)
+    try:
+        from package_doks_blue import exec  # resolvable only once pinned
+    except ImportError:
+        sys.stderr.write(UNPINNED_ERROR)
+        raise SystemExit(2)
+    exec()
+
+
+if __name__ == "__main__":
+    main()

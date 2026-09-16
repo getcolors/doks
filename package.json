@@ -1,0 +1,30 @@
+{
+  "name": "package-doks-red",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./red/src/index.ts"
+  },
+  "files": [
+    "red/src",
+    "red/resources"
+  ],
+  "peerDependencies": {
+    "red": "*"
+  },
+  "peerDependenciesMeta": {
+    "red": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "test": "cd red && bun test && bun run typecheck",
+    "typecheck": "cd red && bun run typecheck",
+    "parity": "./scripts/parity.sh"
+  },
+  "dependencies": {
+    "red": "github:getcolors/red#aa223dd1eae8891633c6fda4bd6f55cb428cb4f8",
+    "colors-compute-red": "github:getcolors/colors-compute#7e1c2349388ff2ca8a3da65a0c8cb888315b57f4"
+  }
+}

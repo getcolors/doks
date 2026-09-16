@@ -1,0 +1,26 @@
+[project]
+name = "package-doks-blue"
+version = "0.1.0"
+description = "Blue/Python implementation of the DOKS package"
+requires-python = ">=3.11"
+dependencies = [
+    "blue",
+    "colors-compute-blue",
+]
+
+[tool.uv.sources]
+blue = { git = "https://github.com/getcolors/blue.git", rev = "ebab8f233ffca0ac817482ecc3b667813ed9d80e" }
+colors-compute-blue = { git = "https://github.com/getcolors/colors-compute.git", subdirectory = "blue", rev = "7e1c2349388ff2ca8a3da65a0c8cb888315b57f4" }
+
+[dependency-groups]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.24"]
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+[tool.hatch.metadata]
+allow-direct-references = true
+[tool.hatch.build.targets.wheel]
+packages = ["src/package_doks_blue"]
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

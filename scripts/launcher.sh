@@ -40,3 +40,4 @@ rm -rf "$tmp/.colors"; sed "s#WORKDIR#.colors#" "$root/test/fixtures/vultr.yml" 
 [[ -f "$tmp/.colors/doks-fixture/compute/managed-kubernetes/managed-kubernetes.tf.json" ]] || fail 'vultr build rendered no compute document'
 [[ ! -e "$tmp/.colors/doks-fixture/doks-registry" ]] || fail 'vultr build rendered a registry stage'
 echo 'launcher: all checks passed'
+"$root/scripts/launcher-ports.sh"
