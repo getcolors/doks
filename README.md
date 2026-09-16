@@ -53,6 +53,39 @@ per completed stage. DigitalOcean removes the worker Droplets and the
 they remain visible briefly after `delete` returns and `check` is expected to
 fail from then on.
 
+## Switching implementations in an existing deployment
+
+Keep the same `colors.yml`, profile, backend and credentials when changing
+launchers. All three implementations use the same cluster and registry state
+keys. Installing another colour does not migrate state or create a second
+cluster. Run lifecycle commands one at a time against that profile.
+
+For example, add Blue alongside an installed Green or Red launcher:
+
+```sh
+npx skills add getcolors/doks --skill package-doks-blue
+cp .agents/skills/package-doks-blue/blue ./blue
+cmp .agents/skills/package-doks-blue/blue ./blue
+./blue build
+./blue create --dry-run
+./blue check
+```
+
+`check` reads existing owned state, refreshes the local kubeconfig and verifies
+node readiness and registry integration. It requires backend credentials and,
+when a registry is configured, the DigitalOcean token. A missing cluster fails
+the check; review that result before running an authorized `create`. The same
+sequence works with `package-doks-red` / `red` or `package-doks-green` / `green`.
+Repeat the copy and comparison after every skill update.
+
+Install Babashka for Green, Bun for Red, or uv with Python 3.11 or newer for
+Blue. The copied launchers fetch their pinned dependencies on first use, so
+that first run needs network access. Blue uses uv's script environment; it does
+not require a manually created virtual environment. Live state and lifecycle
+operations also need OpenTofu (`tofu`) and the backend's command-line tools;
+`check` needs `kubectl`. The `npx skills` installation command requires Node.js
+and npm. Render-only builds need no provider credentials.
+
 ## Development
 
 ```sh
