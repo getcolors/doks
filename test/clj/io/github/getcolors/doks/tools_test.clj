@@ -205,8 +205,27 @@
 (deftest cleanup-removes-access-material
   (let [dir (tmp-dir) opts (assoc (fixture "digitalocean") :workdir dir :green/event :delete)]
     (sut/write-private! (sut/kubeconfig-path opts) "kc")
-    (sut/write-private! (sut/push-config-path opts) "cfg")
-    (is (zero? (:green/exit (sut/cleanup-step opts))))
-    (is (not (fs/exists? (sut/kubeconfig-path opts))))
-    (is (not (fs/exists? (sut/registry-dir opts))))
-    (is (zero? (:green/exit (sut/cleanup-step opts))) "idempotent")))
+    (testing "the push config written by the registry verb is gone with its directory"
+      (sut/write-private! (sut/push-config-path opts) "cfg")
+      (is (fs/exists? (sut/push-config-path opts)))
+      (let [out (with-out-str (is (zero? (:green/exit (sut/cleanup-step opts)))))]
+        (is (not (fs/exists? (sut/push-config-path opts))))
+        (is (not (fs/exists? (sut/registry-dir opts))))
+        (is (not (fs/exists? (sut/kubeconfig-path opts))))
+        (is (str/includes? out "cleanup done"))
+        (is (str/includes? out "delete complete for doks-fixture"))))
+    (testing "idempotent when everything is already absent"
+      (is (zero? (:green/exit (sut/cleanup-step opts))))
+      (is (= [] (:doks/cleanup-leftovers (sut/cleanup-step opts)))))
+    (testing "a subtree it cannot remove is reported, not thrown, and the credential still goes"
+      (sut/write-private! (sut/push-config-path opts) "cfg")
+      (fs/create-dirs (str (sut/registry-dir opts) "/push/buildx"))
+      (with-redefs [fs/delete-tree (fn [& _] (throw (java.nio.file.DirectoryNotEmptyException. "push")))]
+        (let [out (with-out-str (is (zero? (:green/exit (sut/cleanup-step opts)))))]
+          (is (not (fs/exists? (sut/push-config-path opts))))
+          (is (str/includes? out "could not remove"))
+          (is (str/includes? out "buildx")))))
+    (testing "never on any other event"
+      (sut/write-private! (sut/push-config-path opts) "cfg")
+      (is (zero? (:green/exit (sut/cleanup-step (assoc opts :green/event :create)))))
+      (is (fs/exists? (sut/push-config-path opts))))))

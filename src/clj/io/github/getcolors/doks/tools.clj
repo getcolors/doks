@@ -108,6 +108,11 @@
         (and (= :delete event) (:doks/cluster-absent opts))
         (do (println "cluster already absent; nothing to destroy") (assoc opts :green/exit 0))
 
+        (= :delete event)
+        (let [result (compute-result opts (managed/managed-kubernetes opts (utils/compute-request opts)))]
+          (when-not (pos? (:green/exit result 0)) (println "cluster destroyed"))
+          result)
+
         planning?
         (let [result (managed/plan-managed-kubernetes opts (utils/compute-request opts))]
           (write-documents! (compute-dir opts) (:documents result))
@@ -178,10 +183,13 @@
   so a failing tofu command reaches :green/err with its output."
   [opts]
   (if-not (validate/registry? opts)
-    (assoc opts :green/exit 0)
+    (do (when (= :delete (:green/event opts)) (println "no registry configured; nothing to destroy"))
+        (assoc opts :green/exit 0))
     (let [result (tofu/tofu-with-spec opts (registry-specs opts)
                                       {:dir (tool-dir opts registry-tool)
                                        :env (credential-env opts :provider-compute)})]
+      (when (and (= :delete (:green/event opts)) (not (pos? (:green/exit result 0))))
+        (println (str "registry " (validate/registry-name opts) " destroyed")))
       (cond-> result
         (get-in result [:tofu/outputs :params])
         (assoc :doks/registry (walk/keywordize-keys (get-in result [:tofu/outputs :params])))))))
@@ -274,7 +282,8 @@
 
 (defn registry-unlink-step [opts]
   (if-not (and (validate/registry? opts) (= :delete (:green/event opts)) (not (:doks/cluster-absent opts)))
-    (assoc opts :green/exit 0)
+    (do (when (= :delete (:green/event opts)) (println "no registry integration to remove"))
+        (assoc opts :green/exit 0))
     (try
       (let [id (get-in opts [:doks/cluster :cluster_id])]
         (when (utils/missing? id) (throw (ex-info "cluster id unavailable from state" {})))
@@ -283,11 +292,37 @@
         (assoc opts :green/exit 0))
       (catch Exception e (assoc opts :green/exit 1 :green/err (ex-message e))))))
 
+(defn remove-tree!
+  "Remove a generated tree, forcing read-only entries, and return the paths
+  still present afterwards — files another user owns (a container build run
+  as root leaves its buildx state beside the push config) cannot be removed
+  and must be reported, never thrown, once the infrastructure is gone."
+  [path]
+  (when (fs/exists? path)
+    (try (fs/delete-tree path {:force true}) (catch Exception _ nil))
+    (when (fs/exists? path)
+      (into [(str path)] (map str (fs/glob path "**" {:hidden true}))))))
+
 (defn cleanup-step
   "After the infrastructure is gone: the kubeconfig is a dead bearer
-  credential and the push config a dead registry credential."
+  credential and the push config a dead registry credential. Both are
+  removed explicitly and must go; whatever else the registry directory
+  holds is removed on a best-effort basis and reported when it cannot be.
+  Idempotent: an already-clean profile directory is a no-op."
   [opts]
-  (when (= :delete (:green/event opts))
-    (fs/delete-if-exists (kubeconfig-path opts))
-    (when (fs/exists? (registry-dir opts)) (fs/delete-tree (registry-dir opts))))
-  (assoc opts :green/exit 0))
+  (if-not (= :delete (:green/event opts))
+    (assoc opts :green/exit 0)
+    (try
+      (fs/delete-if-exists (kubeconfig-path opts))
+      (fs/delete-if-exists (push-config-path opts))
+      (let [leftovers (remove-tree! (registry-dir opts))]
+        (doseq [path leftovers]
+          (println (str "cleanup: could not remove " path " (owned by another user?); remove it by hand")))
+        (println (str "cleanup done: removed " (kubeconfig-path opts) " and " (registry-dir opts)
+                      (when (seq leftovers) " (with leftovers)")))
+        (println (str "delete complete for " (:profile opts)
+                      "; the provider removes worker machines and cluster firewalls asynchronously"
+                      " over the next minutes, and check is expected to fail from now on"))
+        (assoc opts :green/exit 0 :doks/cleanup-leftovers (vec leftovers)))
+      (catch Exception e
+        (assoc opts :green/exit 1 :green/err (str "cleanup failed after destruction: " (ex-message e)))))))

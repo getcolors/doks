@@ -27,7 +27,11 @@ The cluster and the registry are both named after the profile. State lives in
 the configured R2 or S3 bucket under `<profile>/compute/managed-kubernetes.tfstate`
 (library-owned) and `<profile>/registry.tfstate` (package-owned). Deletion
 requires `COLORS_PAR_COMPUTE_PREVENT_DESTROY=false` for one run and removes
-the registry integration, the cluster, then the registry.
+the registry integration, the cluster, then the registry, printing one line
+per completed stage. DigitalOcean removes the worker Droplets and the
+`k8s-<cluster-id>-*` firewalls asynchronously over the following minutes, so
+they remain visible briefly after `delete` returns and `check` is expected to
+fail from then on.
 
 ## Development
 

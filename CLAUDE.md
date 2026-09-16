@@ -107,7 +107,19 @@ The workflow is one `wire-fn` per verb over these steps:
 - **registry-credentials** requests read-write docker credentials valid for
   one hour and writes them to `.colors/<profile>/registry/push/config.json`
   (0600 in a 0700 directory); the credential is never printed.
-- **cleanup** removes the kubeconfig and the push config after a delete.
+- **cleanup** removes the kubeconfig and the push config after a delete,
+  then the rest of `.colors/<profile>/registry/` on a best-effort basis:
+  files another user owns (a container build run as root leaves its
+  `buildx/` state beside the push config) are reported, never thrown. Each
+  delete stage prints one summary line (integration removed, cluster
+  destroyed, registry destroyed, cleanup done) so a failure after
+  destruction is unambiguous.
+
+Observed live on DigitalOcean: after the library's destroy returns (about
+15 s), the DOKS worker Droplet and the two `k8s-<cluster-id>-*` firewalls
+stay visible in the account for several minutes while DigitalOcean cleans
+them up asynchronously. `delete` says so in its final line; `check` after a
+delete is expected to fail.
 
 The DigitalOcean token travels only as an HTTP header (`babashka.http-client`)
 or the `DIGITALOCEAN_TOKEN` environment of the tofu process, never in argv
