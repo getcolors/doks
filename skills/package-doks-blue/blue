@@ -4,8 +4,8 @@
 # dependencies = ["package-doks-blue", "blue", "colors-compute-blue @ git+https://github.com/getcolors/colors-compute.git@7e1c2349388ff2ca8a3da65a0c8cb888315b57f4#subdirectory=blue"]
 #
 # [tool.uv.sources]
-# package-doks-blue = { git = "https://github.com/getcolors/doks.git", rev = "UNPINNED", subdirectory = "blue" }
-# blue = { git = "https://github.com/getcolors/blue.git", rev = "290f313ead5ca162875c33a049c880da017eae09" }
+# package-doks-blue = { git = "https://github.com/getcolors/doks.git", rev = "8120674e81d88827c4e8b6eaa899b0c5fbaf829c", subdirectory = "blue" }
+# blue = { git = "https://github.com/getcolors/blue.git", rev = "ebab8f233ffca0ac817482ecc3b667813ed9d80e" }
 # ///
 #
 # Managed by `bb pin` — do not edit by hand, and never invent a SHA.

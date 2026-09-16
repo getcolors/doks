@@ -20,12 +20,12 @@ import { homedir } from "node:os";
 // directory, which would halt Bun's upward resolution of `package-doks-red`
 // and break the development symlink at red/red.
 const PINS = {
-  "package-doks-red": null,
+  "package-doks-red": "github:getcolors/doks#8120674e81d88827c4e8b6eaa899b0c5fbaf829c",
   "colors-compute-red": "github:getcolors/colors-compute#7e1c2349388ff2ca8a3da65a0c8cb888315b57f4",
   // The Red SDK is a peer of colors-compute-red, not a dependency: a cold
   // cache installs nothing for a peer, so the consumer pins it explicitly, at
   // the commit red/package.json pins. scripts/launcher.sh checks they agree.
-  "red": "github:getcolors/red#db9bfe61282e2093f4098bf5a6ee0cd10added6e",
+  "red": "github:getcolors/red#aa223dd1eae8891633c6fda4bd6f55cb428cb4f8",
 };
 
 // PINS is the only source of versions, as green's inline SHA is for it. A
