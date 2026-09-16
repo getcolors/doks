@@ -1,0 +1,12 @@
+profile: doks-fixture
+workdir: WORKDIR
+provider-compute: digitalocean
+provider-backend: r2
+compute-prevent-destroy: true
+digitalocean-region: ams3
+doks-version: 1.36.3-do.2
+digitalocean-node-size: s-2vcpu-4gb
+digitalocean-node-count: 2
+digitalocean-registry-tier: basic
+r2-bucket: doks-state
+r2-endpoint: https://example.r2.cloudflarestorage.com

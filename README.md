@@ -1,29 +1,42 @@
-# DOKS Colors Package
+# doks
 
-A Green workflow provisions one DigitalOcean Kubernetes cluster and its worker
-pool. It owns no container registry, load balancer, or Redis infrastructure.
-Requires Babashka, Git, OpenTofu >=1.10 and DigitalOcean/R2 credentials.
+A Green Package Skill for one managed Kubernetes cluster — DigitalOcean DOKS
+or Vultr VKE — through the pinned colors-compute library, with an optional
+deployment-owned DigitalOcean container registry integrated with the cluster
+so every namespace can pull from it.
 
-Copy `colors.example.yml` to `colors.yml`, set a currently supported DOKS version,
-and run `bb doks build`, `bb doks create --dry-run`, then `bb doks create`.
-`bb doks check` verifies cluster identity and readiness; `bb doks kubeconfig`
-refreshes a private kubeconfig valid for 24 hours. `bb test` runs offline tests.
+```sh
+./green build                # render only, no credentials
+./green create --dry-run
+./green create
+./green check                # nodes Ready, registry present and integrated
+./green kubeconfig           # refresh .colors/<profile>/kubeconfig
+./green registry             # one-hour docker push config under .colors/<profile>/registry/push/
+./green delete               # guarded by compute-prevent-destroy
+```
 
-Use environment variables `COLORS_PAR_DO_TOKEN`,
-`COLORS_PAR_DOKS_STATE_R2_ACCESS_KEY_ID`, and
-`COLORS_PAR_DOKS_STATE_R2_SECRET_ACCESS_KEY`. Credentials are passed to OpenTofu
-only through the child process environment, never rendered. The R2 state key is
-`<profile>/cluster.tfstate`; S3 lockfiles serialize mutations. Keep the profile
-and backend stable. The provider stores sensitive kubeconfig data in remote state;
-restrict access to the state bucket.
+Install with `npx skills add getcolors/doks`, then copy
+`.agents/skills/package-doks-green/green` to the deployment root. Credentials
+are `COLORS_PAR_*` exports in `.envrc.private` (`COLORS_PAR_DO_TOKEN` or
+`COLORS_PAR_VULTR_API_KEY`, `COLORS_PAR_R2_ACCESS_KEY_ID`,
+`COLORS_PAR_R2_SECRET_ACCESS_KEY`); never set `COLORS_PAR_PROFILE`. See
+`skills/package-doks-green/references/configuration.md` for every key; the
+in-repo `colors.yml` is a worked example.
 
-Creation plans and applies with resource replacement protection enabled. Deletion
-requires `COLORS_PAR_COMPUTE_PREVENT_DESTROY=false bb doks delete`. This only
-destroys resources tracked in this deployment's state. Before deleting a cluster,
-clean up operators and externally managed infrastructure deliberately. Never
-force-unlock state without proving the previous operation stopped.
+The cluster and the registry are both named after the profile. State lives in
+the configured R2 or S3 bucket under `<profile>/compute/managed-kubernetes.tfstate`
+(library-owned) and `<profile>/registry.tfstate` (package-owned). Deletion
+requires `COLORS_PAR_COMPUTE_PREVENT_DESTROY=false` for one run and removes
+the registry integration, the cluster, then the registry.
 
-Generated files, private environment files, kubeconfig, state, and local caches
-are ignored. Workflow calls are also available through `colors.doks/workflow`
-and `green.workflow/run`. Cloud error output is suppressed to avoid leaking
-provider diagnostics; exit status and the failed phase remain visible.
+## Development
+
+```sh
+bb test
+bb golden
+./scripts/launcher.sh
+```
+
+`bb pin` stamps the payload launcher with the pushed HEAD after a clean
+commit; `DOKS_LIB_ROOT=/path/to/doks` points a copied launcher at a working
+tree meanwhile.

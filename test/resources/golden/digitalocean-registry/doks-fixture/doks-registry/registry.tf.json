@@ -1,0 +1,36 @@
+{
+  "output" : {
+    "params" : {
+      "value" : {
+        "endpoint" : "${digitalocean_container_registry.registry.endpoint}",
+        "kind" : "container-registry",
+        "name" : "${digitalocean_container_registry.registry.name}",
+        "profile" : "doks-fixture",
+        "provider" : "digitalocean",
+        "server_url" : "${digitalocean_container_registry.registry.server_url}"
+      }
+    }
+  },
+  "provider" : {
+    "digitalocean" : { }
+  },
+  "resource" : {
+    "digitalocean_container_registry" : {
+      "registry" : {
+        "lifecycle" : {
+          "prevent_destroy" : true
+        },
+        "name" : "doks-fixture",
+        "subscription_tier_slug" : "basic"
+      }
+    }
+  },
+  "terraform" : {
+    "required_providers" : {
+      "digitalocean" : {
+        "source" : "digitalocean/digitalocean",
+        "version" : "2.51.0"
+      }
+    }
+  }
+}

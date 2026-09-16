@@ -1,5 +1,18 @@
-{:paths ["src" "test"]
+{:paths ["test/clj" "test/resources"]
  :deps {io.github.getcolors/doks {:local/root "."}}
- :tasks {doks {:requires ([colors.doks :as doks]) :task (apply doks/-main *command-line-args*)}
-         test {:requires ([clojure.test :as t] [colors.doks-test])
-               :task (let [r (t/run-tests 'colors.doks-test)] (System/exit (+ (:fail r) (:error r))))}}}
+ :tasks
+ {test {:requires ([clojure.test :as t]
+                   [io.github.getcolors.doks.validate-test]
+                   [io.github.getcolors.doks.tools-test]
+                   [io.github.getcolors.doks.operator-test]
+                   [io.github.getcolors.doks.workflow-test])
+        :task (let [{:keys [fail error]}
+                    (t/run-tests 'io.github.getcolors.doks.validate-test
+                                 'io.github.getcolors.doks.tools-test
+                                 'io.github.getcolors.doks.operator-test
+                                 'io.github.getcolors.doks.workflow-test)]
+                (System/exit (if (pos? (+ fail error)) 1 0)))}
+  golden {:task (shell "./scripts/golden.sh")}
+  golden:accept {:task (shell "./scripts/golden.sh" "--accept")}
+  pin {:task (load-file "tasks/pin.clj")}
+  doks {:task (apply shell "./green" (or (seq *command-line-args*) ["build"]))}}}

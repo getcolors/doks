@@ -1,0 +1,17 @@
+# Example desired state for a doks deployment: one managed Kubernetes cluster
+# named after the profile, plus a deployment-owned container registry. Non-secret
+# values only; credentials are COLORS_PAR_* variables in the gitignored
+# .envrc.private (COLORS_PAR_DO_TOKEN, COLORS_PAR_R2_ACCESS_KEY_ID,
+# COLORS_PAR_R2_SECRET_ACCESS_KEY). Never export COLORS_PAR_PROFILE.
+profile: doks-example
+workdir: .colors
+provider-compute: digitalocean
+provider-backend: r2
+compute-prevent-destroy: true
+digitalocean-region: ams3
+doks-version: 1.36.3-do.2
+digitalocean-node-size: s-2vcpu-4gb
+digitalocean-node-count: 2
+digitalocean-registry-tier: basic
+r2-bucket: doks-state
+r2-endpoint: https://YOUR_ACCOUNT.r2.cloudflarestorage.com

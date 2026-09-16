@@ -1,0 +1,11 @@
+profile: doks-fixture
+workdir: WORKDIR
+provider-compute: vultr
+provider-backend: r2
+compute-prevent-destroy: true
+vultr-region: ams
+vultr-vke-version: v1.33.0+1
+vultr-node-plan: vc2-2c-4gb
+vultr-node-count: 2
+r2-bucket: doks-state
+r2-endpoint: https://example.r2.cloudflarestorage.com
