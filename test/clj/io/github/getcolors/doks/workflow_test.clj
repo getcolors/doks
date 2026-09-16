@@ -9,9 +9,14 @@
             [io.github.getcolors.doks.tools :as tools]
             [io.github.getcolors.doks.workflow :as sut]))
 
+(def scratch
+  "A private workdir for the runs below: the real workflow's backend advice
+  renders, and nothing may land beside the fixtures."
+  (str (fs/create-temp-dir {:prefix "doks-workflow-"})))
+
 (defn fixture [name]
   (let [file (str "test/fixtures/" name ".yml")]
-    (assoc (green-cli/read-state file (slurp file)) :green/state-file (str (fs/absolutize file)))))
+    (assoc (green-cli/read-state file (slurp file)) :green/state-file (str (fs/absolutize file)) :workdir scratch)))
 
 (defn chain [event]
   (loop [step :doks/start acc []]
@@ -39,8 +44,8 @@
     (is (zero? (:green/exit (sut/start-step (assoc (fixture "digitalocean") :green/event :build) {}))))
     (is (zero? (:green/exit (sut/start-step (assoc (fixture "vultr") :green/event :build) {})))))
   (testing "a relative workdir is resolved against the desired-state file"
-    (let [out (sut/start-step (assoc (fixture "digitalocean") :green/event :build) {})]
-      (is (str/ends-with? (:workdir out) "/test/fixtures/WORKDIR"))
+    (let [out (sut/start-step (assoc (fixture "digitalocean") :green/event :build :workdir ".colors") {})]
+      (is (str/ends-with? (:workdir out) "/test/fixtures/.colors"))
       (is (= (managed/managed-kubeconfig-path out) (tools/kubeconfig-path out)))))
   (testing "every problem at exit 2"
     (let [out (sut/start-step (-> (fixture "digitalocean") (dissoc :profile) (assoc :green/event :build :compute-prevent-destroy "x")) {})]
